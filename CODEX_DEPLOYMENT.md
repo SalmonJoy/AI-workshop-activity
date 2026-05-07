@@ -12,7 +12,8 @@ This file is written for a Codex agent or engineer deploying the workshop websit
 - Participant answers: saved in each user's browser `localStorage`
 - Production port from Compose: host `8080` -> container `80`
 - Health endpoint: `/healthz`
-- React routes: `/`, `/sheet/1` through `/sheet/8`
+- React routes: `/workshop/activity`, `/workshop/activity/sheet/1` through `/workshop/activity/sheet/8`
+- Reserved routes: `/` and `/workshop` intentionally return `404` from this container
 
 The deployment root is the `workshop-site` directory. Run all commands in that directory unless stated otherwise.
 
@@ -83,20 +84,24 @@ Verify HTTP routes:
 
 ```bash
 curl -i http://127.0.0.1:8080/healthz
+curl -I http://127.0.0.1:8080/workshop/activity
+curl -I http://127.0.0.1:8080/workshop/activity/
+curl -I http://127.0.0.1:8080/workshop/activity/sheet/1
+curl -I http://127.0.0.1:8080/workshop/activity/sheet/8
 curl -I http://127.0.0.1:8080/
-curl -I http://127.0.0.1:8080/sheet/1
-curl -I http://127.0.0.1:8080/sheet/8
+curl -I http://127.0.0.1:8080/workshop
 ```
 
 Expected:
 
 - `/healthz` returns `204`
-- `/`, `/sheet/1`, and `/sheet/8` return `200`
+- `/workshop/activity`, `/workshop/activity/`, `/workshop/activity/sheet/1`, and `/workshop/activity/sheet/8` return `200`
+- `/` and `/workshop` return `404`
 
 Open in browser:
 
 ```text
-http://SERVER_IP_OR_DOMAIN:8080/
+http://SERVER_IP_OR_DOMAIN:8080/workshop/activity
 ```
 
 ## Updating an Existing Deployment
@@ -114,7 +119,7 @@ Then verify:
 
 ```bash
 curl -i http://127.0.0.1:8080/healthz
-curl -I http://127.0.0.1:8080/sheet/8
+curl -I http://127.0.0.1:8080/workshop/activity/sheet/8
 ```
 
 Because the app stores participant answers in browser `localStorage`, redeploying the container does not erase saved answers in users' browsers. If the browser cache is stale, ask users to refresh the page.
@@ -140,13 +145,13 @@ Then configure the public reverse proxy to forward to:
 http://127.0.0.1:8080
 ```
 
-The app must be served from the domain root, for example:
+The app is intentionally served from this subpath:
 
 ```text
-https://example.com/
+https://example.com/workshop/activity
 ```
 
-Do not mount it under a subpath such as `/workshop` unless Vite `base` and reverse proxy rewrites are also configured.
+Keep `/` and `/workshop` available for future pages. If a parent reverse proxy handles those pages, route only `/workshop/activity` and `/workshop/activity/*` to this container.
 
 ## Changing the Public Port
 
@@ -180,15 +185,18 @@ Run these after every deployment:
 ```bash
 docker compose ps
 curl -i http://127.0.0.1:8080/healthz
+curl -I http://127.0.0.1:8080/workshop/activity
+curl -I http://127.0.0.1:8080/workshop/activity/
+curl -I http://127.0.0.1:8080/workshop/activity/sheet/1
+curl -I http://127.0.0.1:8080/workshop/activity/sheet/8
 curl -I http://127.0.0.1:8080/
-curl -I http://127.0.0.1:8080/sheet/1
-curl -I http://127.0.0.1:8080/sheet/8
+curl -I http://127.0.0.1:8080/workshop
 ```
 
 Also verify in a browser:
 
 - Sidebar navigation works
-- Direct page refresh works on `/sheet/1` and `/sheet/8`
+- Direct page refresh works on `/workshop/activity/sheet/1` and `/workshop/activity/sheet/8`
 - Form entries persist after refresh
 - Print button opens browser print dialog
 - Reset sheet/all controls require confirmation
@@ -227,7 +235,7 @@ Fix by stopping the conflicting process or changing the host port in `docker-com
 Example broken route:
 
 ```text
-/sheet/8
+/workshop/activity/sheet/8
 ```
 
 Cause: nginx SPA fallback missing or wrong reverse proxy behavior.
@@ -236,7 +244,11 @@ Confirm `nginx.conf` contains:
 
 ```nginx
 location / {
-  try_files $uri $uri/ /index.html;
+  return 404;
+}
+
+location /workshop/activity/ {
+  try_files $uri $uri/ /workshop/activity/index.html;
 }
 ```
 
@@ -297,5 +309,6 @@ Do not run broad prune commands on a shared production server without confirming
 - Do not modify the original DOCX files in the parent folder for deployment.
 - Do not add backend services unless explicitly requested.
 - Do not add API keys or AI service calls; this site intentionally has no AI API integration.
-- Preserve nginx SPA fallback so direct routes continue to work.
+- Preserve nginx SPA fallback under `/workshop/activity` so direct sheet routes continue to work.
+- Preserve `404` behavior for `/` and `/workshop` until future pages are implemented.
 - Preserve the `localStorage` behavior; no Docker volume is needed for participant answers.

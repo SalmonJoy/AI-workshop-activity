@@ -62,7 +62,7 @@ const riskOptions = ['Low', 'Medium', 'High']
 function App() {
   return (
     <WorkshopProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/workshop/activity">
         <AppShell />
       </BrowserRouter>
     </WorkshopProvider>

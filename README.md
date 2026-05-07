@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/`.
+Open `http://127.0.0.1:5173/workshop/activity`.
 
 ## Production Build
 
@@ -34,7 +34,7 @@ Run it on port `8080`:
 docker run --rm -p 8080:80 workshop-site:latest
 ```
 
-Open `http://127.0.0.1:8080/`.
+Open `http://127.0.0.1:8080/workshop/activity`.
 
 ## Docker Compose
 
@@ -42,7 +42,7 @@ Open `http://127.0.0.1:8080/`.
 docker compose up --build -d
 ```
 
-Open `http://127.0.0.1:8080/`.
+Open `http://127.0.0.1:8080/workshop/activity`.
 
 Stop the container:
 
@@ -53,7 +53,8 @@ docker compose down
 ## Production Notes
 
 - The container uses a multi-stage build: Node builds the Vite app, nginx serves only the compiled static files.
-- React routes such as `/sheet/1` and `/sheet/8` are handled by nginx using an SPA fallback to `index.html`.
-- Static hashed assets under `/assets/` are cached for one year.
+- React routes such as `/workshop/activity/sheet/1` and `/workshop/activity/sheet/8` are handled by nginx using an SPA fallback to `index.html`.
+- Static hashed assets under `/workshop/activity/assets/` are cached for one year.
 - `index.html` is served with `no-cache` so users receive updated builds after redeployment.
 - Health check endpoint: `/healthz`.
+- `/` and `/workshop` intentionally return `404` in this container so those paths can be used by future pages.
