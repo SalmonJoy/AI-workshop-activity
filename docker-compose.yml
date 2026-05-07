@@ -1,0 +1,8 @@
+services:
+  workshop-site:
+    build:
+      context: .
+    image: workshop-site:latest
+    ports:
+      - "8080:80"
+    restart: unless-stopped
