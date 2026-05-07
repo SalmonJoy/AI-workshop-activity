@@ -233,6 +233,67 @@ pre {
   font-size: 1.4rem;
 }
 
+.response-tools {
+  display: grid;
+  gap: 8px;
+}
+
+.response-tools .ghost-button {
+  width: 100%;
+}
+
+.response-tool-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.response-tools-panel {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgba(23, 32, 42, 0.04);
+}
+
+.response-tools-panel .response-tool-actions {
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+}
+
+.response-tools-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.response-tools-copy p {
+  max-width: 720px;
+}
+
+.tool-message {
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--green);
+  background: var(--green-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.tool-message.error {
+  color: var(--red);
+  background: var(--red-soft);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 .progress-track {
   height: 7px;
   overflow: hidden;
@@ -965,7 +1026,12 @@ td textarea {
   .form-grid,
   .two-col,
   .split-section,
+  .response-tools-panel,
   .short-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .response-tools-panel .response-tool-actions {
     grid-template-columns: 1fr;
   }
 
@@ -1020,6 +1086,7 @@ td textarea {
   .mobile-top,
   .sheet-actions,
   .page-nav,
+  .response-tools,
   .icon-button {
     display: none !important;
   }

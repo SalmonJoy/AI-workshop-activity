@@ -10,6 +10,7 @@ This file is written for a Codex agent or engineer deploying the workshop websit
 - Database: none
 - Environment variables: none required
 - Participant answers: saved in each user's browser `localStorage`
+- Response portability: users can export/import a JSON file from the UI
 - Production port from Compose: host `8080` -> container `80`
 - Health endpoint: `/healthz`
 - React routes: `/workshop/activity`, `/workshop/activity/sheet/1` through `/workshop/activity/sheet/8`
@@ -28,6 +29,25 @@ The deployment root is the `workshop-site` directory. Run all commands in that d
 - `package.json` / `package-lock.json`: npm dependency lockfiles
 
 Do not deploy the Vite dev server (`npm run dev`) in production.
+
+## Response Import / Export
+
+The app has no server-side storage. Responses are saved per browser in `localStorage` under `ai-workshop-v1`.
+
+Users can export a JSON backup from the sidebar or overview page. The file shape is:
+
+```json
+{
+  "app": "practical-ai-workshop",
+  "version": "ai-workshop-v1",
+  "exportedAt": "2026-05-08T00:00:00.000Z",
+  "answers": {
+    "s1.scenario.0.category": "Automation"
+  }
+}
+```
+
+Importing a JSON file replaces the current browser answers after confirmation. The import is fully client-side and does not require Docker volumes, backend services, uploads, or API keys.
 
 ## Server Prerequisites
 
@@ -198,6 +218,8 @@ Also verify in a browser:
 - Sidebar navigation works
 - Direct page refresh works on `/workshop/activity/sheet/1` and `/workshop/activity/sheet/8`
 - Form entries persist after refresh
+- Export JSON downloads a file with metadata and answers
+- Import JSON restores answers and progress after confirmation
 - Print button opens browser print dialog
 - Reset sheet/all controls require confirmation
 

@@ -1,12 +1,14 @@
-import type { ReactNode } from 'react'
+import { type ChangeEvent, type ReactNode, useRef, useState } from 'react'
 import {
   Check,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
   Copy,
+  Download,
   Printer,
   RotateCcw,
+  Upload,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { sheetMetas, type ReferenceRow } from './data/workshop'
@@ -320,6 +322,92 @@ export function ResetSheetButton({ sheetId }: { sheetId: number }) {
       <RotateCcw size={16} />
       Reset sheet
     </button>
+  )
+}
+
+export function ResponsePortabilityControls({
+  variant = 'compact',
+}: {
+  variant?: 'compact' | 'panel'
+}) {
+  const { exportResponses, importResponses } = useWorkshopStore()
+  const inputRef = useRef<HTMLInputElement | null>(null)
+  const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success')
+
+  const showMessage = (nextMessage: string, nextType: 'success' | 'error' = 'success') => {
+    setMessage(nextMessage)
+    setMessageType(nextType)
+  }
+
+  const handleExport = () => {
+    const payload = exportResponses()
+    const json = JSON.stringify(payload, null, 2)
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const date = new Date().toISOString().slice(0, 10)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `ai-workshop-responses-${date}.json`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+    showMessage('Responses exported as JSON.')
+  }
+
+  const handleImport = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) {
+      return
+    }
+
+    if (!window.confirm('Importing this file will replace all current workshop answers. Continue?')) {
+      return
+    }
+
+    try {
+      const text = await file.text()
+      const payload = JSON.parse(text)
+      const result = importResponses(payload)
+      showMessage(`Imported ${result.importedCount} saved answers.`)
+    } catch (error) {
+      const details = error instanceof Error ? error.message : 'Could not import this file.'
+      showMessage(details, 'error')
+    }
+  }
+
+  return (
+    <div className={`response-tools ${variant === 'panel' ? 'response-tools-panel' : ''}`}>
+      {variant === 'panel' && (
+        <div className="response-tools-copy">
+          <h3>Import / Export Responses</h3>
+          <p>
+            Responses are saved only in this browser. Export a JSON backup to continue on another
+            device or restore answers later.
+          </p>
+        </div>
+      )}
+      <div className="response-tool-actions">
+        <button type="button" className="ghost-button" onClick={handleExport}>
+          <Download size={16} />
+          Export JSON
+        </button>
+        <button type="button" className="ghost-button" onClick={() => inputRef.current?.click()}>
+          <Upload size={16} />
+          Import JSON
+        </button>
+      </div>
+      <input
+        ref={inputRef}
+        className="visually-hidden"
+        type="file"
+        accept="application/json,.json"
+        onChange={handleImport}
+      />
+      {message && <p className={`tool-message ${messageType}`}>{message}</p>}
+    </div>
   )
 }
 

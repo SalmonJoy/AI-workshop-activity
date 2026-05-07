@@ -20,6 +20,7 @@ import {
   PageNav,
   PromptBlock,
   ReferenceTable,
+  ResponsePortabilityControls,
   ResetSheetButton,
   ScoreCell,
   ScoreTotal,
@@ -115,6 +116,7 @@ function AppShell() {
               <div style={{ width: `${averageProgress}%` }} />
             </div>
           </div>
+          <ResponsePortabilityControls />
           <button
             type="button"
             className="ghost-button danger"
@@ -186,6 +188,10 @@ function Overview() {
         <OperationsVisual />
       </header>
 
+      <Section title="Response Backup">
+        <ResponsePortabilityControls variant="panel" />
+      </Section>
+
       <Section title="Workshop Sheets">
         <div className="sheet-grid">
           {sheetMetas.map((sheet, index) => {
@@ -207,7 +213,7 @@ function Overview() {
                   <div style={{ width: `${progress}%` }} />
                 </div>
                 <small>
-                  {sheet.activityType} • {sheet.suggestedTime}
+                  {sheet.activityType} - {sheet.suggestedTime}
                 </small>
               </Link>
             )

@@ -11,6 +11,25 @@ npm run dev
 
 Open `http://127.0.0.1:5173/workshop/activity`.
 
+## Response Import / Export
+
+Participant answers are saved in the browser, not on the server. Users can export a JSON backup from the sidebar or overview page, then import it later to restore their responses.
+
+Exported files use this shape:
+
+```json
+{
+  "app": "practical-ai-workshop",
+  "version": "ai-workshop-v1",
+  "exportedAt": "2026-05-08T00:00:00.000Z",
+  "answers": {
+    "s1.scenario.0.category": "Automation"
+  }
+}
+```
+
+Importing a file replaces all current browser answers after confirmation.
+
 ## Production Build
 
 ```bash

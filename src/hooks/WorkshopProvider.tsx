@@ -3,6 +3,7 @@ import { sheetMetas, storageKey } from '../data/workshop'
 import {
   type Answers,
   type AnswerValue,
+  type WorkshopExportPayload,
   WorkshopContext,
 } from './workshopStoreContext'
 
@@ -39,6 +40,33 @@ function saveAnswers(next: Answers) {
   } catch {
     // Local persistence is a convenience; the worksheet should remain usable if storage is blocked.
   }
+}
+
+function validateImportPayload(payload: unknown): Answers {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw new Error('The import file must contain a JSON object.')
+  }
+
+  const answers = (payload as { answers?: unknown }).answers
+  if (!answers || typeof answers !== 'object' || Array.isArray(answers)) {
+    throw new Error('The import file must include an answers object.')
+  }
+
+  const next = Object.create(null) as Answers
+  for (const [key, value] of Object.entries(answers)) {
+    const validType =
+      typeof value === 'string' ||
+      typeof value === 'boolean' ||
+      (typeof value === 'number' && Number.isFinite(value))
+
+    if (!validType) {
+      throw new Error(`Invalid answer value for "${key}". Values must be text, numbers, or booleans.`)
+    }
+
+    next[key] = value
+  }
+
+  return next
 }
 
 export function WorkshopProvider({ children }: { children: ReactNode }) {
@@ -80,6 +108,22 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
     saveAnswers({})
   }, [])
 
+  const exportResponses = useCallback((): WorkshopExportPayload => {
+    return {
+      app: 'practical-ai-workshop',
+      version: storageKey,
+      exportedAt: new Date().toISOString(),
+      answers,
+    }
+  }, [answers])
+
+  const importResponses = useCallback((payload: unknown) => {
+    const next = validateImportPayload(payload)
+    setAnswers(next)
+    saveAnswers(next)
+    return { importedCount: Object.keys(next).length }
+  }, [])
+
   const answeredCountForSheet = useCallback(
     (sheetId: number) => {
       const prefix = `s${sheetId}.`
@@ -104,6 +148,8 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
       answers,
       getAnswer,
       setAnswer,
+      exportResponses,
+      importResponses,
       resetSheet,
       resetAll,
       progressForSheet,
@@ -113,6 +159,8 @@ export function WorkshopProvider({ children }: { children: ReactNode }) {
       answers,
       getAnswer,
       setAnswer,
+      exportResponses,
+      importResponses,
       resetSheet,
       resetAll,
       progressForSheet,
