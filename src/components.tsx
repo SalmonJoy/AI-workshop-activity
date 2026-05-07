@@ -21,6 +21,12 @@ type FieldProps = {
   placeholder?: string
 }
 
+type StoredFieldProps = {
+  answerKey: string
+  label?: string
+  placeholder?: string
+}
+
 function keyFor(sheetId: number, name: string) {
   return `s${sheetId}.${name}`
 }
@@ -151,6 +157,84 @@ export function CheckboxLine({
         type="checkbox"
         checked={checked}
         onChange={(event) => setAnswer(keyFor(sheetId, name), event.target.checked)}
+      />
+      <span>{label}</span>
+    </label>
+  )
+}
+
+export function StoredTextInput({ answerKey, label, placeholder }: StoredFieldProps) {
+  const { getAnswer, setAnswer } = useWorkshopStore()
+  const value = String(getAnswer(answerKey, ''))
+
+  return (
+    <label className="field">
+      {label && <span>{label}</span>}
+      <input
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => setAnswer(answerKey, event.target.value)}
+      />
+    </label>
+  )
+}
+
+export function StoredTextArea({ answerKey, label, placeholder }: StoredFieldProps) {
+  const { getAnswer, setAnswer } = useWorkshopStore()
+  const value = String(getAnswer(answerKey, ''))
+
+  return (
+    <label className="field">
+      {label && <span>{label}</span>}
+      <textarea
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => setAnswer(answerKey, event.target.value)}
+      />
+    </label>
+  )
+}
+
+export function StoredSelectField({
+  answerKey,
+  label,
+  options,
+  placeholder = 'Select',
+}: StoredFieldProps & { options: string[] }) {
+  const { getAnswer, setAnswer } = useWorkshopStore()
+  const value = String(getAnswer(answerKey, ''))
+
+  return (
+    <label className="field">
+      {label && <span>{label}</span>}
+      <select value={value} onChange={(event) => setAnswer(answerKey, event.target.value)}>
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option value={option} key={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
+export function StoredCheckboxLine({
+  answerKey,
+  label,
+}: {
+  answerKey: string
+  label: string
+}) {
+  const { getAnswer, setAnswer } = useWorkshopStore()
+  const checked = Boolean(getAnswer(answerKey, false))
+
+  return (
+    <label className="check-line">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => setAnswer(answerKey, event.target.checked)}
       />
       <span>{label}</span>
     </label>
@@ -365,7 +449,7 @@ export function ResponsePortabilityControls({
       return
     }
 
-    if (!window.confirm('Importing this file will replace all current workshop answers. Continue?')) {
+    if (!window.confirm('Importing this file will replace all current workshop responses. Continue?')) {
       return
     }
 
@@ -391,7 +475,7 @@ export function ResponsePortabilityControls({
           <h3>Import / Export Responses</h3>
           <p>
             Responses are saved only in this browser. Export a JSON backup to continue on another
-            device or restore answers later.
+            device or restore activity sheet and action-plan answers later.
           </p>
         </div>
       )}

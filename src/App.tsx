@@ -4,13 +4,17 @@ import {
 } from 'react'
 import {
   BarChart3,
+  BookOpen,
   Bot,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   Factory,
   FileText,
   Gauge,
   Home,
   Menu,
+  Printer,
   RotateCcw,
   ShieldCheck,
   Sparkles,
@@ -31,9 +35,14 @@ import {
   Section,
   SelectField,
   StatusPill,
+  StoredCheckboxLine,
+  StoredSelectField,
+  StoredTextArea,
+  StoredTextInput,
   TextArea,
   TextInput,
 } from './components'
+import { postSession, readingArticles, readingMetas, type ReadingArticle, type ReadingSection } from './data/reading'
 import {
   benefits,
   controls,
@@ -139,6 +148,18 @@ function AppShell() {
             <Home size={18} />
             <span className="sheet-link-label">Overview</span>
           </NavLink>
+          <NavLink
+            to="/reading"
+            className="sheet-link"
+            title="Reading Material"
+            aria-label="Reading Material"
+          >
+            <BookOpen size={18} />
+            <span className="sheet-link-label">
+              Reading
+              <small>Reference material</small>
+            </span>
+          </NavLink>
           {sheetMetas.map((sheet, index) => {
             const Icon = sheetIcons[index]
             const label = `Sheet ${sheet.id}: ${sheet.title}`
@@ -199,6 +220,8 @@ function AppShell() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Overview />} />
+          <Route path="/reading" element={<ReadingOverview />} />
+          <Route path="/reading/:readingId" element={<ReadingRoute />} />
           <Route path="/sheet/:sheetId" element={<SheetRoute />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -230,6 +253,10 @@ function Overview() {
               Sheets
             </span>
             <span>
+              <strong>4</strong>
+              Readings
+            </span>
+            <span>
               <strong>{totalMinutes}</strong>
               Minutes
             </span>
@@ -244,6 +271,28 @@ function Overview() {
 
       <Section title="Response Backup">
         <ResponsePortabilityControls variant="panel" />
+      </Section>
+
+      <Section title="Reading Material">
+        <div className="sheet-grid reading-grid">
+          {readingMetas.map((reading) => (
+            <Link to={`/reading/${reading.id}`} className="sheet-card reading-card" key={reading.id}>
+              <div className="sheet-card-top">
+                <span className="sheet-card-icon reading-card-icon">
+                  <BookOpen size={21} />
+                </span>
+                <small>{reading.suggestedTime}</small>
+              </div>
+              <h3>
+                Reading {reading.id}: {reading.title}
+              </h3>
+              <p>{reading.summary}</p>
+              <small>
+                {reading.readingType} - {reading.moduleLink}
+              </small>
+            </Link>
+          ))}
+        </div>
       </Section>
 
       <Section title="Workshop Sheets">
@@ -321,6 +370,359 @@ function OperationsVisual() {
         </span>
       </div>
     </div>
+  )
+}
+
+function ReadingOverview() {
+  return (
+    <div className="page">
+      <header className="page-intro reading-overview-intro">
+        <div>
+          <span className="sheet-number">Reading Material</span>
+          <h1>Reference Library and Post-Session Action Plan</h1>
+          <p>
+            Use these readings before, during, and after the workshop to reinforce the core concepts,
+            prompt patterns, practical manufacturing use cases, and responsible AI controls.
+          </p>
+        </div>
+        <div className="meta-strip">
+          <span>4 reading pages</span>
+          <span>Includes one saved action plan</span>
+          <span>Print-ready</span>
+        </div>
+      </header>
+
+      <Section title="Reading Pages">
+        <div className="sheet-grid reading-grid">
+          {readingMetas.map((reading) => (
+            <Link to={`/reading/${reading.id}`} className="sheet-card reading-card" key={reading.id}>
+              <div className="sheet-card-top">
+                <span className="sheet-card-icon reading-card-icon">
+                  <BookOpen size={21} />
+                </span>
+                <small>{reading.suggestedTime}</small>
+              </div>
+              <h3>
+                Reading {reading.id}: {reading.title}
+              </h3>
+              <p>{reading.summary}</p>
+              <small>
+                {reading.readingType} - {reading.moduleLink}
+              </small>
+            </Link>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Response Portability" tone="accent">
+        <p>
+          The post-session action plan on Reading 4 saves responses in the same browser storage as
+          the activity sheets. JSON export and import include those reading responses automatically.
+        </p>
+      </Section>
+    </div>
+  )
+}
+
+function ReadingRoute() {
+  const { readingId } = useParams()
+  const id = Number(readingId)
+  if (!readingMetas.some((reading) => reading.id === id)) {
+    return <Navigate to="/reading" replace />
+  }
+
+  const article = readingArticles.find((reading) => reading.id === id)
+
+  return (
+    <div className="page reading-page">
+      {article ? <ReadingArticlePage article={article} /> : <PostSessionReadingPage />}
+      <ReadingNav readingId={id} />
+    </div>
+  )
+}
+
+function ReadingMetaStrip({ reading }: { reading: ReadingArticle | (typeof readingMetas)[number] }) {
+  return (
+    <div className="meta-strip">
+      <span>{reading.readingType}</span>
+      <span>{reading.suggestedTime}</span>
+      <span>{reading.moduleLink}</span>
+    </div>
+  )
+}
+
+function ReadingArticlePage({ article }: { article: ReadingArticle }) {
+  return (
+    <>
+      <header className="page-intro reading-intro">
+        <div>
+          <span className="sheet-number">Reading {article.id}</span>
+          <h1>{article.title}</h1>
+          <p>{article.summary}</p>
+        </div>
+        <ReadingMetaStrip reading={article} />
+      </header>
+
+      {article.sections.map((section) => (
+        <ReadingSectionView section={section} key={section.title} />
+      ))}
+    </>
+  )
+}
+
+function ReadingSectionView({ section }: { section: ReadingSection }) {
+  return (
+    <Section title={section.title}>
+      <div className="reading-section-body">
+        {section.paragraphs?.map((paragraph) => (
+          <p key={paragraph}>{paragraph}</p>
+        ))}
+        {section.bullets && (
+          <ul className="plain-list reading-list">
+            {section.bullets.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        )}
+        {section.table && <ReferenceTable columns={section.table.columns} rows={section.table.rows} />}
+        {section.prompt && <PromptBlock title={section.prompt.title} prompt={section.prompt.text} />}
+        {section.takeaway && (
+          <div className="reading-takeaway">
+            <strong>Key point</strong>
+            <p>{section.takeaway}</p>
+          </div>
+        )}
+      </div>
+    </Section>
+  )
+}
+
+function ReadingNav({ readingId }: { readingId: number }) {
+  const previous = readingId > 1 ? readingId - 1 : null
+  const next = readingId < readingMetas.length ? readingId + 1 : null
+
+  return (
+    <nav className="page-nav" aria-label="Reading navigation">
+      {previous ? (
+        <Link to={`/reading/${previous}`} className="nav-button">
+          <ChevronLeft size={17} />
+          Reading {previous}
+        </Link>
+      ) : (
+        <Link to="/reading" className="nav-button">
+          <ChevronLeft size={17} />
+          Reading Overview
+        </Link>
+      )}
+      <button type="button" className="nav-button" onClick={() => window.print()}>
+        <Printer size={17} />
+        Print
+      </button>
+      {next ? (
+        <Link to={`/reading/${next}`} className="nav-button primary">
+          Reading {next}
+          <ChevronRight size={17} />
+        </Link>
+      ) : (
+        <Link to="/reading" className="nav-button primary">
+          Reading Overview
+          <ChevronRight size={17} />
+        </Link>
+      )}
+    </nav>
+  )
+}
+
+function PostSessionReadingPage() {
+  const meta = readingMetas[3]
+  const teamLongFields = new Set([
+    'Problem Area',
+    'Current Process',
+    'How AI Can Help',
+    'Data Required',
+    'Expected Benefit',
+    'Main Risk',
+    'Control Required',
+  ])
+
+  return (
+    <>
+      <header className="page-intro reading-intro">
+        <div>
+          <span className="sheet-number">Reading 4</span>
+          <h1>{meta.title}</h1>
+          <p>{meta.summary}</p>
+        </div>
+        <ReadingMetaStrip reading={meta} />
+      </header>
+
+      <Section title="Purpose of This Sheet">
+        <div className="reading-section-body">
+          {postSession.purpose.map((paragraph) => (
+            <p key={paragraph}>{paragraph}</p>
+          ))}
+          <ul className="plain-list reading-list">
+            {postSession.outcomes.map((outcome) => (
+              <li key={outcome}>{outcome}</li>
+            ))}
+          </ul>
+        </div>
+      </Section>
+
+      <Section title="What We Covered in the Workshop">
+        <ReferenceTable columns={['Area', 'What You Learned']} rows={postSession.coveredAreas} />
+      </Section>
+
+      <Section title="Recommended Reading List">
+        <ReferenceTable columns={['Topic', 'What to Read', 'Why It Is Useful']} rows={postSession.recommendedReading} />
+      </Section>
+
+      <Section title="Suggested 30-Day Learning Plan">
+        <div className="reading-week-stack">
+          {postSession.weeks.map((week, weekIndex) => (
+            <div className="reading-week" key={week.title}>
+              <h3>{week.title}</h3>
+              <div className="table-scroll">
+                <table className="worksheet-table compact-table">
+                  <thead>
+                    <tr>
+                      <th>Task</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {week.tasks.map((task, taskIndex) => (
+                      <tr key={task}>
+                        <td>{task}</td>
+                        <td>
+                          <StoredCheckboxLine
+                            answerKey={`r4.week${weekIndex + 1}.task${taskIndex}`}
+                            label="Done"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Personal AI Action Plan">
+        <StoredTextInput answerKey="r4.personal.role" label="My Current Role / Function" />
+        <h4>Three Tasks Where AI Can Help Me</h4>
+        <div className="table-scroll">
+          <table className="worksheet-table">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Task</th>
+                <th>How AI Can Help</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3].map((number) => (
+                <tr key={number}>
+                  <td>{number}</td>
+                  <td>
+                    <StoredTextInput answerKey={`r4.personal.task${number}.name`} />
+                  </td>
+                  <td>
+                    <StoredTextArea answerKey={`r4.personal.task${number}.help`} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <StoredTextArea
+          answerKey="r4.personal.prompt"
+          label="One Prompt I Will Use Regularly"
+          placeholder="Act as a... Your task is to... Context... Input... Output format... Constraints..."
+        />
+      </Section>
+
+      <Section title="Team-Level AI Use Case Idea">
+        <div className="form-grid">
+          {postSession.teamFields.map((field, index) => {
+            const key = `r4.team.field${index}`
+            if (field === 'Human Review Needed?') {
+              return (
+                <StoredSelectField
+                  answerKey={key}
+                  label={field}
+                  options={yesNoOptions}
+                  key={field}
+                />
+              )
+            }
+            if (field === 'Pilot Timeline') {
+              return (
+                <StoredSelectField
+                  answerKey={key}
+                  label={field}
+                  options={['30 days', '60 days', '90 days']}
+                  key={field}
+                />
+              )
+            }
+            return teamLongFields.has(field) ? (
+              <StoredTextArea answerKey={key} label={field} key={field} />
+            ) : (
+              <StoredTextInput answerKey={key} label={field} key={field} />
+            )
+          })}
+        </div>
+      </Section>
+
+      <Section title="AI Use Case Selection Checklist">
+        <div className="table-scroll">
+          <table className="worksheet-table review-table">
+            <thead>
+              <tr>
+                <th>Question</th>
+                <th>Yes / No / Partially</th>
+              </tr>
+            </thead>
+            <tbody>
+              {postSession.checklist.map((question, index) => (
+                <tr key={question}>
+                  <td>{question}</td>
+                  <td>
+                    <StoredSelectField
+                      answerKey={`r4.selection.${index}`}
+                      options={yesNoPartialOptions}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Section>
+
+      <Section title="Safe AI Usage Reminder">
+        <ReferenceTable columns={['Rule', 'Reminder']} rows={postSession.safeRules} />
+      </Section>
+
+      <Section title="Post-Workshop Reflection">
+        <div className="question-stack">
+          {postSession.reflections.map((question, index) => (
+            <StoredTextArea
+              answerKey={`r4.reflection.${index}`}
+              label={`${index + 1}. ${question}`}
+              key={question}
+            />
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Final Takeaway" tone="accent">
+        <p>{postSession.finalTakeaway}</p>
+      </Section>
+    </>
   )
 }
 

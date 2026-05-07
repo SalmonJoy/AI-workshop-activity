@@ -1,6 +1,6 @@
 # Practical AI Workshop Site
 
-React + Vite workshop website for the 8 activity sheets. Participant answers are saved in browser local storage. No backend or AI API is required.
+React + Vite workshop website for the 8 activity sheets plus the reading material section. Participant answers are saved in browser local storage. No backend or AI API is required.
 
 ## Local Development
 
@@ -11,9 +11,21 @@ npm run dev
 
 Open `http://127.0.0.1:5173/workshop/activity`.
 
+## Reading Material
+
+Reading material is available under the same activity app:
+
+- `http://127.0.0.1:5173/workshop/activity/reading`
+- `http://127.0.0.1:5173/workshop/activity/reading/1` - AI Basics for Corporate IT Teams
+- `http://127.0.0.1:5173/workshop/activity/reading/2` - AI Use Cases in Manufacturing and IT Operations
+- `http://127.0.0.1:5173/workshop/activity/reading/3` - Prompt Engineering Cheat Sheet
+- `http://127.0.0.1:5173/workshop/activity/reading/4` - Post-Session Reading List and 30-Day AI Action Plan
+
+Reading pages 1-3 are reference pages. Reading page 4 includes saved action-plan fields and checklists.
+
 ## Response Import / Export
 
-Participant answers are saved in the browser, not on the server. Users can export a JSON backup from the sidebar or overview page, then import it later to restore their responses.
+Participant answers are saved in the browser, not on the server. Users can export a JSON backup from the sidebar or overview page, then import it later to restore their activity sheet responses and Reading 4 action-plan responses.
 
 Exported files use this shape:
 
@@ -23,7 +35,8 @@ Exported files use this shape:
   "version": "ai-workshop-v1",
   "exportedAt": "2026-05-08T00:00:00.000Z",
   "answers": {
-    "s1.scenario.0.category": "Automation"
+    "s1.scenario.0.category": "Automation",
+    "r4.week1.task0": true
   }
 }
 ```
@@ -77,6 +90,7 @@ docker compose down
 
 - The container uses a multi-stage build: Node builds the Vite app, nginx serves only the compiled static files.
 - React routes such as `/workshop/activity/sheet/1` and `/workshop/activity/sheet/8` are handled by nginx using an SPA fallback to `index.html`.
+- Reading routes such as `/workshop/activity/reading`, `/workshop/activity/reading/1`, and `/workshop/activity/reading/4` use the same SPA fallback.
 - Static hashed assets under `/workshop/activity/assets/` are cached for one year.
 - `index.html` is served with `no-cache` so users receive updated builds after redeployment.
 - Health check endpoint: `/healthz`.

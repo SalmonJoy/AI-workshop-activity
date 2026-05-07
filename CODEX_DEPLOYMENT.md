@@ -13,7 +13,7 @@ This file is written for a Codex agent or engineer deploying the workshop websit
 - Response portability: users can export/import a JSON file from the UI
 - Production port from Compose: host `8080` -> container `80`
 - Health endpoint: `/healthz`
-- React routes: `/workshop/activity`, `/workshop/activity/sheet/1` through `/workshop/activity/sheet/8`
+- React routes: `/workshop/activity`, `/workshop/activity/sheet/1` through `/workshop/activity/sheet/8`, `/workshop/activity/reading`, and `/workshop/activity/reading/1` through `/workshop/activity/reading/4`
 - Reserved routes: `/` and `/workshop` intentionally return `404` from this container
 
 The deployment root is the `workshop-site` directory. Run all commands in that directory unless stated otherwise.
@@ -34,7 +34,7 @@ Do not deploy the Vite dev server (`npm run dev`) in production.
 
 The app has no server-side storage. Responses are saved per browser in `localStorage` under `ai-workshop-v1`.
 
-Users can export a JSON backup from the sidebar or overview page. The file shape is:
+Users can export a JSON backup from the sidebar or overview page. The export includes activity sheet keys such as `s1.*` and the Reading 4 post-session action-plan keys such as `r4.*`. The file shape is:
 
 ```json
 {
@@ -42,7 +42,8 @@ Users can export a JSON backup from the sidebar or overview page. The file shape
   "version": "ai-workshop-v1",
   "exportedAt": "2026-05-08T00:00:00.000Z",
   "answers": {
-    "s1.scenario.0.category": "Automation"
+    "s1.scenario.0.category": "Automation",
+    "r4.week1.task0": true
   }
 }
 ```
@@ -110,6 +111,8 @@ Verify HTTP routes:
 curl -i http://127.0.0.1:8080/healthz
 curl -I http://127.0.0.1:8080/workshop/activity
 curl -I http://127.0.0.1:8080/workshop/activity/
+curl -I http://127.0.0.1:8080/workshop/activity/reading
+curl -I http://127.0.0.1:8080/workshop/activity/reading/4
 curl -I http://127.0.0.1:8080/workshop/activity/sheet/1
 curl -I http://127.0.0.1:8080/workshop/activity/sheet/8
 curl -I http://127.0.0.1:8080/
@@ -119,7 +122,7 @@ curl -I http://127.0.0.1:8080/workshop
 Expected:
 
 - `/healthz` returns `204`
-- `/workshop/activity`, `/workshop/activity/`, `/workshop/activity/sheet/1`, and `/workshop/activity/sheet/8` return `200`
+- `/workshop/activity`, `/workshop/activity/`, `/workshop/activity/reading`, `/workshop/activity/reading/4`, `/workshop/activity/sheet/1`, and `/workshop/activity/sheet/8` return `200`
 - `/` and `/workshop` return `404`
 
 Open in browser:
@@ -144,6 +147,7 @@ Then verify:
 ```bash
 curl -i http://127.0.0.1:8080/healthz
 curl -I http://127.0.0.1:8080/workshop/activity/sheet/8
+curl -I http://127.0.0.1:8080/workshop/activity/reading/4
 ```
 
 Because the app stores participant answers in browser `localStorage`, redeploying the container does not erase saved answers in users' browsers. If the browser cache is stale, ask users to refresh the page.
@@ -211,6 +215,8 @@ docker compose ps
 curl -i http://127.0.0.1:8080/healthz
 curl -I http://127.0.0.1:8080/workshop/activity
 curl -I http://127.0.0.1:8080/workshop/activity/
+curl -I http://127.0.0.1:8080/workshop/activity/reading
+curl -I http://127.0.0.1:8080/workshop/activity/reading/4
 curl -I http://127.0.0.1:8080/workshop/activity/sheet/1
 curl -I http://127.0.0.1:8080/workshop/activity/sheet/8
 curl -I http://127.0.0.1:8080/
@@ -222,9 +228,10 @@ Also verify in a browser:
 - Sidebar navigation works
 - Sidebar is collapsed by default, icon navigation works, and expanded/collapsed preference persists after refresh
 - Direct page refresh works on `/workshop/activity/sheet/1` and `/workshop/activity/sheet/8`
+- Reading Material navigation works, including direct refresh on `/workshop/activity/reading/4`
 - Form entries persist after refresh
-- Export JSON downloads a file with metadata and answers
-- Import JSON restores answers and progress after confirmation
+- Export JSON downloads a file with metadata, sheet answers, and Reading 4 action-plan answers
+- Import JSON restores sheet and Reading 4 answers after confirmation
 - Print button opens browser print dialog
 - Reset sheet/all controls require confirmation
 
@@ -337,5 +344,6 @@ Do not run broad prune commands on a shared production server without confirming
 - Do not add backend services unless explicitly requested.
 - Do not add API keys or AI service calls; this site intentionally has no AI API integration.
 - Preserve nginx SPA fallback under `/workshop/activity` so direct sheet routes continue to work.
+- Preserve reading routes under `/workshop/activity/reading` and keep Reading 4 responses in the same JSON import/export flow.
 - Preserve `404` behavior for `/` and `/workshop` until future pages are implemented.
 - Preserve the `localStorage` behavior; no Docker volume is needed for participant answers.
