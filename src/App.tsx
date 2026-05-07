@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
 } from 'react'
 import {
@@ -14,7 +15,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
-import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useParams } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useLocation, useParams } from 'react-router-dom'
 import {
   CheckboxLine,
   Details,
@@ -68,10 +69,21 @@ function App() {
   return (
     <WorkshopProvider>
       <BrowserRouter basename="/workshop/activity">
+        <ScrollToTop />
         <AppShell />
       </BrowserRouter>
     </WorkshopProvider>
   )
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [pathname])
+
+  return null
 }
 
 function AppShell() {
