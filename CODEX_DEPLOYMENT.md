@@ -49,6 +49,10 @@ Users can export a JSON backup from the sidebar or overview page. The file shape
 
 Importing a JSON file replaces the current browser answers after confirmation. The import is fully client-side and does not require Docker volumes, backend services, uploads, or API keys.
 
+## Navigation Behavior
+
+The left navigation is collapsed by default on desktop and tablet screens. Users can click the icons directly or expand the sidebar with the toggle button to show full labels, progress text, import/export labels, and reset text. On mobile widths, the sidebar remains hidden and the compact top bar is used.
+
 ## Server Prerequisites
 
 Required:
@@ -216,6 +220,7 @@ curl -I http://127.0.0.1:8080/workshop
 Also verify in a browser:
 
 - Sidebar navigation works
+- Sidebar is collapsed by default, icon navigation works, and expanded/collapsed preference persists after refresh
 - Direct page refresh works on `/workshop/activity/sheet/1` and `/workshop/activity/sheet/8`
 - Form entries persist after refresh
 - Export JSON downloads a file with metadata and answers

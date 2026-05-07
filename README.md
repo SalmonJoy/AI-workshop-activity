@@ -30,6 +30,10 @@ Exported files use this shape:
 
 Importing a file replaces all current browser answers after confirmation.
 
+## Navigation
+
+The left navigation is collapsed by default on desktop and tablet screens. Participants can use the icons directly or expand the sidebar with the toggle button to show full sheet labels and action text. On mobile, the sidebar is hidden and the compact top bar is shown.
+
 ## Production Build
 
 ```bash

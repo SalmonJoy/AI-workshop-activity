@@ -326,8 +326,10 @@ export function ResetSheetButton({ sheetId }: { sheetId: number }) {
 }
 
 export function ResponsePortabilityControls({
+  iconOnly = false,
   variant = 'compact',
 }: {
+  iconOnly?: boolean
   variant?: 'compact' | 'panel'
 }) {
   const { exportResponses, importResponses } = useWorkshopStore()
@@ -379,7 +381,11 @@ export function ResponsePortabilityControls({
   }
 
   return (
-    <div className={`response-tools ${variant === 'panel' ? 'response-tools-panel' : ''}`}>
+    <div
+      className={`response-tools ${variant === 'panel' ? 'response-tools-panel' : ''} ${
+        iconOnly ? 'response-tools-icon-only' : ''
+      }`}
+    >
       {variant === 'panel' && (
         <div className="response-tools-copy">
           <h3>Import / Export Responses</h3>
@@ -390,13 +396,25 @@ export function ResponsePortabilityControls({
         </div>
       )}
       <div className="response-tool-actions">
-        <button type="button" className="ghost-button" onClick={handleExport}>
+        <button
+          type="button"
+          className={`ghost-button ${iconOnly ? 'icon-only-button' : ''}`}
+          onClick={handleExport}
+          title="Export JSON"
+          aria-label="Export JSON"
+        >
           <Download size={16} />
-          Export JSON
+          <span className="button-label">Export JSON</span>
         </button>
-        <button type="button" className="ghost-button" onClick={() => inputRef.current?.click()}>
+        <button
+          type="button"
+          className={`ghost-button ${iconOnly ? 'icon-only-button' : ''}`}
+          onClick={() => inputRef.current?.click()}
+          title="Import JSON"
+          aria-label="Import JSON"
+        >
           <Upload size={16} />
-          Import JSON
+          <span className="button-label">Import JSON</span>
         </button>
       </div>
       <input

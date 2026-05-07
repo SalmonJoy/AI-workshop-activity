@@ -1,4 +1,7 @@
 import {
+  useState,
+} from 'react'
+import {
   BarChart3,
   Bot,
   ClipboardCheck,
@@ -59,6 +62,7 @@ const yesNoPartialOptions = ['Yes', 'No', 'Partially']
 const priorityFullOptions = ['Critical', 'High', 'Medium', 'Low']
 const safetyOptions = ['Safe', 'Use with Caution', 'Not Allowed Without Approval']
 const riskOptions = ['Low', 'Medium', 'High']
+const sidebarPreferenceKey = 'ai-workshop-sidebar-collapsed'
 
 function App() {
   return (
@@ -72,34 +76,70 @@ function App() {
 
 function AppShell() {
   const { resetAll, progressForSheet } = useWorkshopStore()
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem(sidebarPreferenceKey) !== 'false'
+    } catch {
+      return true
+    }
+  })
   const averageProgress = Math.round(
     sheetMetas.reduce((sum, sheet) => sum + progressForSheet(sheet.id), 0) / sheetMetas.length,
   )
+  const toggleSidebar = () => {
+    setSidebarCollapsed((current) => {
+      const next = !current
+      try {
+        window.localStorage.setItem(sidebarPreferenceKey, String(next))
+      } catch {
+        // The sidebar still works if localStorage is unavailable.
+      }
+      return next
+    })
+  }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
       <aside className="sidebar">
-        <Link to="/" className="brand">
-          <span className="brand-mark">
-            <Factory size={22} />
-          </span>
-          <span>
-            <strong>Practical AI Workshop</strong>
-            <small>Corporate IT in Manufacturing</small>
-          </span>
-        </Link>
+        <div className="sidebar-header">
+          <Link to="/" className="brand" title="Workshop overview" aria-label="Workshop overview">
+            <span className="brand-mark">
+              <Factory size={22} />
+            </span>
+            <span className="brand-copy">
+              <strong>Practical AI Workshop</strong>
+              <small>Corporate IT in Manufacturing</small>
+            </span>
+          </Link>
+          <button
+            type="button"
+            className="sidebar-toggle"
+            onClick={toggleSidebar}
+            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <Menu size={18} />
+          </button>
+        </div>
 
         <nav className="sheet-list" aria-label="Workshop sheets">
-          <NavLink to="/" end className="sheet-link">
+          <NavLink to="/" end className="sheet-link" title="Overview" aria-label="Overview">
             <Home size={18} />
-            <span>Overview</span>
+            <span className="sheet-link-label">Overview</span>
           </NavLink>
           {sheetMetas.map((sheet, index) => {
             const Icon = sheetIcons[index]
+            const label = `Sheet ${sheet.id}: ${sheet.title}`
             return (
-              <NavLink to={`/sheet/${sheet.id}`} className="sheet-link" key={sheet.id}>
+              <NavLink
+                to={`/sheet/${sheet.id}`}
+                className="sheet-link"
+                title={label}
+                aria-label={label}
+                key={sheet.id}
+              >
                 <Icon size={18} />
-                <span>
+                <span className="sheet-link-label">
                   Sheet {sheet.id}
                   <small>{sheet.shortTitle}</small>
                 </span>
@@ -116,10 +156,12 @@ function AppShell() {
               <div style={{ width: `${averageProgress}%` }} />
             </div>
           </div>
-          <ResponsePortabilityControls />
+          <ResponsePortabilityControls iconOnly={isSidebarCollapsed} />
           <button
             type="button"
-            className="ghost-button danger"
+            className={`ghost-button danger ${isSidebarCollapsed ? 'icon-only-button' : ''}`}
+            title="Reset all answers"
+            aria-label="Reset all answers"
             onClick={() => {
               if (window.confirm('Clear all saved workshop answers?')) {
                 resetAll()
@@ -127,7 +169,7 @@ function AppShell() {
             }}
           >
             <RotateCcw size={16} />
-            Reset all
+            <span className="button-label">Reset all</span>
           </button>
         </div>
       </aside>
