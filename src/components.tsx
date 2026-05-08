@@ -362,12 +362,12 @@ export function PageNav({ sheetId }: { sheetId: number }) {
   return (
     <nav className="page-nav" aria-label="Sheet navigation">
       {previous ? (
-        <Link to={`/sheet/${previous}`} className="nav-button">
+        <Link to={`/activity/sheet/${previous}`} className="nav-button">
           <ChevronLeft size={17} />
           Sheet {previous}
         </Link>
       ) : (
-        <Link to="/" className="nav-button">
+        <Link to="/activity" className="nav-button">
           <ChevronLeft size={17} />
           Overview
         </Link>
@@ -377,12 +377,12 @@ export function PageNav({ sheetId }: { sheetId: number }) {
         Print
       </button>
       {next ? (
-        <Link to={`/sheet/${next}`} className="nav-button primary">
+        <Link to={`/activity/sheet/${next}`} className="nav-button primary">
           Sheet {next}
           <ChevronRight size={17} />
         </Link>
       ) : (
-        <Link to="/" className="nav-button primary">
+        <Link to="/activity" className="nav-button primary">
           Overview
           <ChevronRight size={17} />
         </Link>

@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Presentation PDFs are provisioned during deployment, not committed to Git.
+public/presentation/*.pdf
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

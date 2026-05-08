@@ -13,7 +13,8 @@ This file is written for a Codex agent or engineer deploying the workshop websit
 - Response portability: users can export/import a JSON file from the UI
 - Production port from Compose: host `8080` -> container `80`
 - Health endpoint: `/healthz`
-- React routes: `/workshop/activity`, `/workshop/activity/sheet/1` through `/workshop/activity/sheet/8`, `/workshop/activity/reading`, and `/workshop/activity/reading/1` through `/workshop/activity/reading/4`
+- React routes: `/workshop/activity`, `/workshop/activity/sheet/1` through `/workshop/activity/sheet/8`, `/workshop/activity/reading`, `/workshop/activity/reading/1` through `/workshop/activity/reading/4`, and `/workshop/presentation`
+- Presentation PDF: `/workshop/presentation/workshop-presentation.pdf`
 - Reserved routes: `/` and `/workshop` intentionally return `404` from this container
 
 The deployment root is the `workshop-site` directory. Run all commands in that directory unless stated otherwise.
@@ -27,6 +28,8 @@ The deployment root is the `workshop-site` directory. Run all commands in that d
 - `docker-compose.yml`: production container definition
 - `.dockerignore`: keeps `node_modules`, `dist`, logs, and git metadata out of the Docker build context
 - `package.json` / `package-lock.json`: npm dependency lockfiles
+- `public/presentation/.gitkeep`: keeps the presentation folder in Git
+- `public/presentation/workshop-presentation.pdf`: downloaded during deployment and intentionally ignored by Git
 
 Do not deploy the Vite dev server (`npm run dev`) in production.
 
@@ -54,6 +57,44 @@ Importing a JSON file replaces the current browser answers after confirmation. T
 
 The left navigation is collapsed by default on desktop and tablet screens. Users can click the icons directly or expand the sidebar with the toggle button to show full labels, progress text, import/export labels, and reset text. On mobile widths, the sidebar remains hidden and the compact top bar is used.
 
+## Presentation Deck
+
+The presentation route is:
+
+```text
+/workshop/presentation
+```
+
+The original PDF is not committed to GitHub. It must be downloaded on the deployment server before building the Docker image.
+
+Google Drive source:
+
+```text
+https://drive.google.com/file/d/1EJsByDY2UgFAoXRnM6GzlfRb3su-GRKM/view?usp=sharing
+```
+
+Direct download URL:
+
+```text
+https://drive.google.com/uc?export=download&id=1EJsByDY2UgFAoXRnM6GzlfRb3su-GRKM
+```
+
+Required local path before `docker build`:
+
+```text
+public/presentation/workshop-presentation.pdf
+```
+
+It is served in production as:
+
+```text
+/workshop/presentation/workshop-presentation.pdf
+```
+
+The React viewer uses PDF.js for slide-like navigation and lazy-loads the PDF rendering code only when the presentation route is opened.
+
+The file is ignored by `.gitignore` but not by `.dockerignore`, so Docker includes it in the image when it is present locally. The Dockerfile intentionally fails the build if this PDF is missing.
+
 ## Server Prerequisites
 
 Required:
@@ -79,6 +120,24 @@ From the parent folder that contains `workshop-site`:
 
 ```bash
 cd workshop-site
+```
+
+Download the presentation PDF from Google Drive:
+
+```bash
+mkdir -p public/presentation
+curl -L "https://drive.google.com/uc?export=download&id=1EJsByDY2UgFAoXRnM6GzlfRb3su-GRKM" -o public/presentation/workshop-presentation.pdf
+test "$(head -c 4 public/presentation/workshop-presentation.pdf)" = "%PDF"
+```
+
+If the final `test` command fails, the downloaded file is likely an HTML permission/confirmation page instead of the PDF. Confirm the Google Drive file is shared as "Anyone with the link can view", then download the PDF manually to `public/presentation/workshop-presentation.pdf`.
+
+Optional fallback on servers with Python:
+
+```bash
+python3 -m pip install --user gdown
+python3 -m gdown --id 1EJsByDY2UgFAoXRnM6GzlfRb3su-GRKM -O public/presentation/workshop-presentation.pdf
+test "$(head -c 4 public/presentation/workshop-presentation.pdf)" = "%PDF"
 ```
 
 Build the production image:
@@ -111,6 +170,8 @@ Verify HTTP routes:
 curl -i http://127.0.0.1:8080/healthz
 curl -I http://127.0.0.1:8080/workshop/activity
 curl -I http://127.0.0.1:8080/workshop/activity/
+curl -I http://127.0.0.1:8080/workshop/presentation
+curl -I http://127.0.0.1:8080/workshop/presentation/workshop-presentation.pdf
 curl -I http://127.0.0.1:8080/workshop/activity/reading
 curl -I http://127.0.0.1:8080/workshop/activity/reading/4
 curl -I http://127.0.0.1:8080/workshop/activity/sheet/1
@@ -122,7 +183,7 @@ curl -I http://127.0.0.1:8080/workshop
 Expected:
 
 - `/healthz` returns `204`
-- `/workshop/activity`, `/workshop/activity/`, `/workshop/activity/reading`, `/workshop/activity/reading/4`, `/workshop/activity/sheet/1`, and `/workshop/activity/sheet/8` return `200`
+- `/workshop/activity`, `/workshop/activity/`, `/workshop/presentation`, `/workshop/presentation/workshop-presentation.pdf`, `/workshop/activity/reading`, `/workshop/activity/reading/4`, `/workshop/activity/sheet/1`, and `/workshop/activity/sheet/8` return `200`
 - `/` and `/workshop` return `404`
 
 Open in browser:
@@ -136,6 +197,9 @@ http://SERVER_IP_OR_DOMAIN:8080/workshop/activity
 From `workshop-site`:
 
 ```bash
+mkdir -p public/presentation
+curl -L "https://drive.google.com/uc?export=download&id=1EJsByDY2UgFAoXRnM6GzlfRb3su-GRKM" -o public/presentation/workshop-presentation.pdf
+test "$(head -c 4 public/presentation/workshop-presentation.pdf)" = "%PDF"
 docker compose down
 docker build -t workshop-site:latest .
 docker compose up -d
@@ -146,6 +210,7 @@ Then verify:
 
 ```bash
 curl -i http://127.0.0.1:8080/healthz
+curl -I http://127.0.0.1:8080/workshop/presentation
 curl -I http://127.0.0.1:8080/workshop/activity/sheet/8
 curl -I http://127.0.0.1:8080/workshop/activity/reading/4
 ```
@@ -173,13 +238,19 @@ Then configure the public reverse proxy to forward to:
 http://127.0.0.1:8080
 ```
 
-The app is intentionally served from this subpath:
+The activity app is intentionally served from this subpath:
 
 ```text
 https://example.com/workshop/activity
 ```
 
-Keep `/` and `/workshop` available for future pages. If a parent reverse proxy handles those pages, route only `/workshop/activity` and `/workshop/activity/*` to this container.
+The presentation is served from:
+
+```text
+https://example.com/workshop/presentation
+```
+
+Keep `/` and exact `/workshop` available for future pages. If a parent reverse proxy handles those pages, route `/workshop/activity*`, `/workshop/presentation*`, and `/workshop/assets/*` to this container.
 
 ## Changing the Public Port
 
@@ -215,6 +286,8 @@ docker compose ps
 curl -i http://127.0.0.1:8080/healthz
 curl -I http://127.0.0.1:8080/workshop/activity
 curl -I http://127.0.0.1:8080/workshop/activity/
+curl -I http://127.0.0.1:8080/workshop/presentation
+curl -I http://127.0.0.1:8080/workshop/presentation/workshop-presentation.pdf
 curl -I http://127.0.0.1:8080/workshop/activity/reading
 curl -I http://127.0.0.1:8080/workshop/activity/reading/4
 curl -I http://127.0.0.1:8080/workshop/activity/sheet/1
@@ -228,6 +301,7 @@ Also verify in a browser:
 - Sidebar navigation works
 - Sidebar is collapsed by default, icon navigation works, and expanded/collapsed preference persists after refresh
 - Direct page refresh works on `/workshop/activity/sheet/1` and `/workshop/activity/sheet/8`
+- Presentation navigation works on `/workshop/presentation`, including previous/next, first/last, page input, keyboard navigation, and PDF download
 - Reading Material navigation works, including direct refresh on `/workshop/activity/reading/4`
 - Form entries persist after refresh
 - Export JSON downloads a file with metadata, sheet answers, and Reading 4 action-plan answers
@@ -282,7 +356,7 @@ location / {
 }
 
 location /workshop/activity/ {
-  try_files $uri $uri/ /workshop/activity/index.html;
+  try_files $uri $uri/ /workshop/index.html;
 }
 ```
 
@@ -316,10 +390,37 @@ inside the container.
 Use the lockfile-based install. The Dockerfile already runs:
 
 ```bash
-npm ci
+npm ci --include=dev
 ```
 
 If dependency resolution fails, check that `package-lock.json` is present and matches `package.json`.
+
+### Build fails because presentation PDF is missing
+
+Symptom:
+
+```text
+Missing public/presentation/workshop-presentation.pdf
+```
+
+Fix:
+
+```bash
+mkdir -p public/presentation
+curl -L "https://drive.google.com/uc?export=download&id=1EJsByDY2UgFAoXRnM6GzlfRb3su-GRKM" -o public/presentation/workshop-presentation.pdf
+test "$(head -c 4 public/presentation/workshop-presentation.pdf)" = "%PDF"
+docker build -t workshop-site:latest .
+```
+
+If the PDF check fails, set the Google Drive sharing permission to "Anyone with the link can view" or download the file manually to the same destination path.
+
+Optional fallback on servers with Python:
+
+```bash
+python3 -m pip install --user gdown
+python3 -m gdown --id 1EJsByDY2UgFAoXRnM6GzlfRb3su-GRKM -O public/presentation/workshop-presentation.pdf
+test "$(head -c 4 public/presentation/workshop-presentation.pdf)" = "%PDF"
+```
 
 ## Safe Cleanup
 
@@ -345,5 +446,7 @@ Do not run broad prune commands on a shared production server without confirming
 - Do not add API keys or AI service calls; this site intentionally has no AI API integration.
 - Preserve nginx SPA fallback under `/workshop/activity` so direct sheet routes continue to work.
 - Preserve reading routes under `/workshop/activity/reading` and keep Reading 4 responses in the same JSON import/export flow.
+- Preserve the presentation route under `/workshop/presentation`.
+- Do not commit the presentation PDF; download it to `public/presentation/workshop-presentation.pdf` during deployment.
 - Preserve `404` behavior for `/` and `/workshop` until future pages are implemented.
 - Preserve the `localStorage` behavior; no Docker volume is needed for participant answers.

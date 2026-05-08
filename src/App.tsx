@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useEffect,
   useState,
 } from 'react'
@@ -9,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
+  Download,
   Factory,
   FileText,
   Gauge,
@@ -64,6 +67,11 @@ import {
 } from './data/workshop'
 import { WorkshopProvider } from './hooks/WorkshopProvider'
 import { useWorkshopStore } from './hooks/useWorkshopStore'
+import { presentationDownloadName, presentationPdfUrl } from './presentationConfig'
+
+const PresentationPage = lazy(() =>
+  import('./PresentationPage').then((module) => ({ default: module.PresentationPage })),
+)
 
 const sheetIcons = [Sparkles, BarChart3, Factory, Bot, ClipboardCheck, FileText, ShieldCheck, Gauge]
 const priorityOptions = ['High', 'Medium', 'Low']
@@ -77,7 +85,7 @@ const sidebarPreferenceKey = 'ai-workshop-sidebar-collapsed'
 function App() {
   return (
     <WorkshopProvider>
-      <BrowserRouter basename="/workshop/activity">
+      <BrowserRouter basename="/workshop">
         <ScrollToTop />
         <AppShell />
       </BrowserRouter>
@@ -123,7 +131,7 @@ function AppShell() {
     <div className={`app-shell ${isSidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`}>
       <aside className="sidebar">
         <div className="sidebar-header">
-          <Link to="/" className="brand" title="Workshop overview" aria-label="Workshop overview">
+          <Link to="/activity" className="brand" title="Workshop overview" aria-label="Workshop overview">
             <span className="brand-mark">
               <Factory size={22} />
             </span>
@@ -143,13 +151,25 @@ function AppShell() {
           </button>
         </div>
 
-        <nav className="sheet-list" aria-label="Workshop sheets">
-          <NavLink to="/" end className="sheet-link" title="Overview" aria-label="Overview">
+        <nav className="sheet-list" aria-label="Workshop navigation">
+          <NavLink to="/activity" end className="sheet-link" title="Overview" aria-label="Overview">
             <Home size={18} />
             <span className="sheet-link-label">Overview</span>
           </NavLink>
           <NavLink
-            to="/reading"
+            to="/presentation"
+            className="sheet-link"
+            title="Presentation"
+            aria-label="Presentation"
+          >
+            <FileText size={18} />
+            <span className="sheet-link-label">
+              Presentation
+              <small>Workshop deck</small>
+            </span>
+          </NavLink>
+          <NavLink
+            to="/activity/reading"
             className="sheet-link"
             title="Reading Material"
             aria-label="Reading Material"
@@ -165,7 +185,7 @@ function AppShell() {
             const label = `Sheet ${sheet.id}: ${sheet.title}`
             return (
               <NavLink
-                to={`/sheet/${sheet.id}`}
+                to={`/activity/sheet/${sheet.id}`}
                 className="sheet-link"
                 title={label}
                 aria-label={label}
@@ -208,7 +228,7 @@ function AppShell() {
       </aside>
 
       <div className="mobile-top">
-        <Link to="/" className="brand compact">
+        <Link to="/activity" className="brand compact">
           <span className="brand-mark">
             <Factory size={21} />
           </span>
@@ -219,13 +239,36 @@ function AppShell() {
 
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<Overview />} />
-          <Route path="/reading" element={<ReadingOverview />} />
-          <Route path="/reading/:readingId" element={<ReadingRoute />} />
-          <Route path="/sheet/:sheetId" element={<SheetRoute />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<Navigate to="/activity" replace />} />
+          <Route path="/activity" element={<Overview />} />
+          <Route path="/activity/reading" element={<ReadingOverview />} />
+          <Route path="/activity/reading/:readingId" element={<ReadingRoute />} />
+          <Route path="/activity/sheet/:sheetId" element={<SheetRoute />} />
+          <Route
+            path="/presentation"
+            element={
+              <Suspense fallback={<PresentationFallback />}>
+                <PresentationPage />
+              </Suspense>
+            }
+          />
+          <Route path="*" element={<Navigate to="/activity" replace />} />
         </Routes>
       </main>
+    </div>
+  )
+}
+
+function PresentationFallback() {
+  return (
+    <div className="page presentation-page">
+      <header className="page-intro">
+        <div>
+          <span className="sheet-number">Presentation</span>
+          <h1>Loading presentation</h1>
+          <p>Preparing the slide viewer.</p>
+        </div>
+      </header>
     </div>
   )
 }
@@ -273,10 +316,37 @@ function Overview() {
         <ResponsePortabilityControls variant="panel" />
       </Section>
 
+      <Section title="Workshop Presentation">
+        <div className="presentation-overview-card">
+          <div className="presentation-overview-copy">
+            <span className="sheet-card-icon presentation-card-icon">
+              <FileText size={21} />
+            </span>
+            <div>
+              <h3>Presentation: Corporate IT Teams in Manufacturing</h3>
+              <p>
+                Open the workshop deck in a slide-style viewer with previous/next controls,
+                keyboard navigation, and a direct PDF download.
+              </p>
+            </div>
+          </div>
+          <div className="presentation-overview-actions">
+            <Link to="/presentation" className="nav-button primary">
+              <FileText size={17} />
+              Open presentation
+            </Link>
+            <a href={presentationPdfUrl} className="nav-button" download={presentationDownloadName}>
+              <Download size={17} />
+              Download PDF
+            </a>
+          </div>
+        </div>
+      </Section>
+
       <Section title="Reading Material">
         <div className="sheet-grid reading-grid">
           {readingMetas.map((reading) => (
-            <Link to={`/reading/${reading.id}`} className="sheet-card reading-card" key={reading.id}>
+            <Link to={`/activity/reading/${reading.id}`} className="sheet-card reading-card" key={reading.id}>
               <div className="sheet-card-top">
                 <span className="sheet-card-icon reading-card-icon">
                   <BookOpen size={21} />
@@ -301,7 +371,7 @@ function Overview() {
             const Icon = sheetIcons[index]
             const progress = progressForSheet(sheet.id)
             return (
-              <Link to={`/sheet/${sheet.id}`} className="sheet-card" key={sheet.id}>
+              <Link to={`/activity/sheet/${sheet.id}`} className="sheet-card" key={sheet.id}>
                 <div className="sheet-card-top">
                   <span className="sheet-card-icon">
                     <Icon size={21} />
@@ -395,7 +465,7 @@ function ReadingOverview() {
       <Section title="Reading Pages">
         <div className="sheet-grid reading-grid">
           {readingMetas.map((reading) => (
-            <Link to={`/reading/${reading.id}`} className="sheet-card reading-card" key={reading.id}>
+            <Link to={`/activity/reading/${reading.id}`} className="sheet-card reading-card" key={reading.id}>
               <div className="sheet-card-top">
                 <span className="sheet-card-icon reading-card-icon">
                   <BookOpen size={21} />
@@ -428,7 +498,7 @@ function ReadingRoute() {
   const { readingId } = useParams()
   const id = Number(readingId)
   if (!readingMetas.some((reading) => reading.id === id)) {
-    return <Navigate to="/reading" replace />
+    return <Navigate to="/activity/reading" replace />
   }
 
   const article = readingArticles.find((reading) => reading.id === id)
@@ -504,12 +574,12 @@ function ReadingNav({ readingId }: { readingId: number }) {
   return (
     <nav className="page-nav" aria-label="Reading navigation">
       {previous ? (
-        <Link to={`/reading/${previous}`} className="nav-button">
+        <Link to={`/activity/reading/${previous}`} className="nav-button">
           <ChevronLeft size={17} />
           Reading {previous}
         </Link>
       ) : (
-        <Link to="/reading" className="nav-button">
+        <Link to="/activity/reading" className="nav-button">
           <ChevronLeft size={17} />
           Reading Overview
         </Link>
@@ -519,12 +589,12 @@ function ReadingNav({ readingId }: { readingId: number }) {
         Print
       </button>
       {next ? (
-        <Link to={`/reading/${next}`} className="nav-button primary">
+        <Link to={`/activity/reading/${next}`} className="nav-button primary">
           Reading {next}
           <ChevronRight size={17} />
         </Link>
       ) : (
-        <Link to="/reading" className="nav-button primary">
+        <Link to="/activity/reading" className="nav-button primary">
           Reading Overview
           <ChevronRight size={17} />
         </Link>
@@ -730,7 +800,7 @@ function SheetRoute() {
   const { sheetId } = useParams()
   const id = Number(sheetId)
   if (!sheetMetas.some((sheet) => sheet.id === id)) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/activity" replace />
   }
 
   return (
